@@ -1,0 +1,41 @@
+name: paper-copy
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # every 5 minutes (GitHub's minimum; runs can be delayed)
+  workflow_dispatch: {}      # lets you run it manually from the Actions tab
+
+permissions:
+  contents: write            # needed to commit the state and log files
+
+# Never run two copies at once, so the state file can't be corrupted
+concurrency:
+  group: paper-copy
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run one paper-copy tick
+        run: python hl_paper_copy.py 0x5b5d51203a0f9079f8aeb098a6523a13f298c060 --capital 1000 --once
+
+      - name: Save state and log
+        run: |
+          git config user.name "paper-copy-bot"
+          git config user.email "paper-copy-bot@users.noreply.github.com"
+          git add paper_*_state.json paper_*_log.csv
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "paper-copy tick"
+            git pull --rebase --autostash
+            git push
+          fi
