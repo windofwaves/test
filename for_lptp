@@ -1,0 +1,10 @@
+sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+sudo mkdir -p /etc/systemd/logind.conf.d
+printf '[Login]\nHandleLidSwitch=ignore\nHandleLidSwitchExternalPower=ignore\nHandleLidSwitchDocked=ignore\nIdleAction=ignore\n' | sudo tee /etc/systemd/logind.conf.d/nosleep.conf
+sudo reboot
+
+
+
+sudo mkdir -p /etc/NetworkManager/conf.d
+printf '[connection]\nwifi.powersave = 2\n' | sudo tee /etc/NetworkManager/conf.d/wifi-powersave-off.conf
+sudo systemctl restart NetworkManager
