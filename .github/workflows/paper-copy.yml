@@ -24,14 +24,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run one paper-copy tick
+      - name: Run one tick of v1 (perp-only copy, the original test)
         run: python hl_paper_copy.py 0x5b5d51203a0f9079f8aeb098a6523a13f298c060 --capital 1000 --once
+
+      - name: Run one tick of v2 (hedge-netted, fixed scale, drawdown stop)
+        run: python hl_paper_copy_v2.py 0x5b5d51203a0f9079f8aeb098a6523a13f298c060 --capital 1000 --tag _v2 --once
 
       - name: Save state and log
         run: |
           git config user.name "paper-copy-bot"
           git config user.email "paper-copy-bot@users.noreply.github.com"
-          git add paper_*_state.json paper_*_log.csv
+          git add paper_*_state.json paper_*_log.csv paper_*_book.csv
           if git diff --cached --quiet; then
             echo "Nothing to commit"
           else
@@ -39,3 +42,4 @@ jobs:
             git pull --rebase --autostash
             git push
           fi
+
