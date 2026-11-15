@@ -2,7 +2,7 @@ name: paper-copy
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # every 5 minutes (GitHub's minimum; runs can be delayed)
+    - cron: "2-59/5 * * * *"   # every 5 minutes at minutes 2,7,12,... (off the busy :00/:05 marks)
   workflow_dispatch: {}      # lets you run it manually from the Actions tab
 
 permissions:
@@ -25,21 +25,32 @@ jobs:
           python-version: "3.12"
 
       - name: Run one tick of v1 (perp-only copy, the original test)
+        continue-on-error: true
         run: python hl_paper_copy.py 0x5b5d51203a0f9079f8aeb098a6523a13f298c060 --capital 1000 --once
 
       - name: Run one tick of v2 (hedge-netted, fixed scale, drawdown stop)
+        continue-on-error: true
         run: python hl_paper_copy_v2.py 0x5b5d51203a0f9079f8aeb098a6523a13f298c060 --capital 1000 --tag _v2 --once
 
       - name: Save state and log
+        if: always()
         run: |
+          set -x
           git config user.name "paper-copy-bot"
           git config user.email "paper-copy-bot@users.noreply.github.com"
-          git add paper_*_state.json paper_*_log.csv paper_*_book.csv
+          git add paper_*
           if git diff --cached --quiet; then
             echo "Nothing to commit"
-          else
-            git commit -m "paper-copy tick"
-            git pull --rebase --autostash
-            git push
+            exit 0
           fi
-
+          git commit -m "paper-copy tick"
+          for i in 1 2 3; do
+            if git pull --rebase -X theirs --autostash origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME"; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          echo "Could not save after 3 attempts"
+          git status
+          exit 1
