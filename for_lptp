@@ -8,3 +8,18 @@ sudo reboot
 sudo mkdir -p /etc/NetworkManager/conf.d
 printf '[connection]\nwifi.powersave = 2\n' | sudo tee /etc/NetworkManager/conf.d/wifi-powersave-off.conf
 sudo systemctl restart NetworkManager
+
+
+python3 - <<'EOF'
+import csv
+from datetime import datetime
+prev = None
+rows = 0
+for r in csv.DictReader(open("paper_0x5b5d51_v2_log.csv")):
+    t = datetime.strptime(r["time_utc"], "%Y-%m-%d %H:%M:%S")
+    rows += 1
+    if prev and (t - prev).total_seconds() > 90:
+        print("gap", prev, "->", t, f"({(t - prev).total_seconds() / 60:.1f} min)")
+    prev = t
+print(rows, "rows, last row:", prev)
+EOF
