@@ -23,3 +23,16 @@ for r in csv.DictReader(open("paper_0x5b5d51_v2_log.csv")):
     prev = t
 print(rows, "rows, last row:", prev)
 EOF
+
+python3 - <<'EOF'
+import csv
+from datetime import datetime
+SINCE = datetime(2026, 11, 16, 12, 0, 0)   # UTC, just after you set the wake lock
+prev = None
+for r in csv.DictReader(open("paper_0x5b5d51_v2_log.csv")):
+    t = datetime.strptime(r["time_utc"], "%Y-%m-%d %H:%M:%S")
+    if t >= SINCE and prev and (t - prev).total_seconds() > 90:
+        print("gap", prev, "->", t, f"({(t - prev).total_seconds() / 60:.1f} min)")
+    prev = t
+print("checked up to", prev)
+EOF
